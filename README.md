@@ -53,6 +53,44 @@ via variáveis de ambiente — nenhuma mudança de código é necessária para p
 Sem `TURSO_DATABASE_URL`/`BLOB_READ_WRITE_TOKEN` configuradas, o app tenta usar disco local — o
 que falha silenciosamente em produção na Vercel. Configure as duas antes do primeiro deploy real.
 
+## Deploy: front na Vercel + banco/uploads no EasyPanel
+
+O app inteiro (UI + rotas `/api/*`) roda na Vercel — Next.js não separa front/back
+fisicamente, então não tem um "backend" à parte pra rodar no EasyPanel. O que muda nesse
+cenário é onde ficam os dois pontos que a Vercel não guarda em disco (banco e uploads):
+em vez de Turso/Vercel Blob, apontam pra serviços self-hosted no EasyPanel.
+
+**1. Banco de dados — `sqld` (servidor do Turso) no EasyPanel**
+
+O adaptador já usado (`@prisma/adapter-libsql`) fala o protocolo libSQL com qualquer
+servidor compatível, não só o Turso Cloud — então rodar o [`sqld`](https://github.com/tursodatabase/libsql)
+(imagem Docker `ghcr.io/tursodatabase/libsql-server`) como app no EasyPanel funciona sem
+nenhuma mudança de código. No projeto Vercel:
+```
+TURSO_DATABASE_URL="libsql://seu-app-no-easypanel.dominio.com"
+TURSO_AUTH_TOKEN="..."   # se o sqld estiver com --auth-jwt-key configurado; senão, omita
+```
+Rode `npx prisma db push` uma vez apontando pra essa URL (mesmo processo do Turso Cloud)
+pra criar as tabelas. Se preferir Postgres em vez de sqld, dá pra trocar — mas exige mudar
+`provider = "sqlite"` pro `"postgresql"` em `prisma/schema.prisma` e retestar as queries,
+então só vale a pena se `sqld` não servir por algum motivo.
+
+**2. Uploads — MinIO (S3-compatível) no EasyPanel**
+
+`POST /api/uploads` (`src/app/api/uploads/route.ts`) escolhe o destino nesta ordem —
+primeira variável configurada vence: **S3 → Vercel Blob → disco local**. Suba um app MinIO
+no EasyPanel, crie um bucket público, e defina no projeto Vercel:
+```
+S3_ENDPOINT="https://seu-minio-no-easypanel.dominio.com"
+S3_BUCKET="filhos-do-destino"
+S3_ACCESS_KEY_ID="..."
+S3_SECRET_ACCESS_KEY="..."
+S3_PUBLIC_URL_BASE="https://seu-minio-no-easypanel.dominio.com/filhos-do-destino"  # opcional
+```
+Com `S3_ENDPOINT` definida, o Blob da Vercel é ignorado — não precisa conectar os dois.
+
+**3. Sessão** — mesma coisa de sempre: `SESSION_SECRET` nas env vars do projeto Vercel.
+
 ## Estrutura
 
 - `src/lib/regras.ts` — fonte única de verdade das regras mecânicas (atributos, dados, dificuldades,
