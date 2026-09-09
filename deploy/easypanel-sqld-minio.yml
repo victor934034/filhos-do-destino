@@ -1,0 +1,41 @@
+# Infra self-hosted pro deploy "front na Vercel + banco/uploads no EasyPanel".
+#
+# Como usar no EasyPanel: Project → Create Service → App → escolha a aba "Compose" e cole
+# este arquivo (ou recrie os dois serviços manualmente pela UI usando os mesmos valores —
+# imagem, porta, env vars, volume). Depois de subir, cada serviço precisa de um domínio
+# público com HTTPS habilitado (o EasyPanel faz isso automaticamente via Traefik/Let's
+# Encrypt ao ativar "Domains" no serviço) — é esse domínio que entra nas env vars da Vercel.
+#
+# Troque TODOS os valores de exemplo (senhas, chaves) antes de subir de verdade.
+
+services:
+  sqld:
+    image: ghcr.io/tursodatabase/libsql-server:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - sqld_data:/var/lib/sqld
+    environment:
+      # Sem essas duas, o sqld sobe sem autenticação — ok pra testar, mas troque antes de
+      # ir pra produção de verdade. Ver "Autenticação" no README de deploy pra gerar o par
+      # de chaves JWT (o projeto sqld documenta o passo a passo, muda entre versões).
+      SQLD_HTTP_LISTEN_ADDR: "0.0.0.0:8080"
+      # SQLD_AUTH_JWT_KEY_FILE: /var/lib/sqld/auth.jwt.key
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000" # API S3 — é essa porta que vira S3_ENDPOINT
+      - "9001:9001" # Console web de administração
+    volumes:
+      - minio_data:/data
+    environment:
+      MINIO_ROOT_USER: "troque-este-usuario"
+      MINIO_ROOT_PASSWORD: "troque-esta-senha-longa"
+
+volumes:
+  sqld_data:
+  minio_data:

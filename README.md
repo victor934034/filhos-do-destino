@@ -55,6 +55,9 @@ que falha silenciosamente em produção na Vercel. Configure as duas antes do pr
 
 ## Deploy: front na Vercel + banco/uploads no EasyPanel
 
+> Passo a passo completo, com comandos prontos pra copiar: `deploy/DEPLOY.md` (o compose
+> do `sqld` + MinIO pro EasyPanel está em `deploy/easypanel-sqld-minio.yml`).
+
 O app inteiro (UI + rotas `/api/*`) roda na Vercel — Next.js não separa front/back
 fisicamente, então não tem um "backend" à parte pra rodar no EasyPanel. O que muda nesse
 cenário é onde ficam os dois pontos que a Vercel não guarda em disco (banco e uploads):
