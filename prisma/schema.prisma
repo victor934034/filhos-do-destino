@@ -1,0 +1,328 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  // Local: caminho de arquivo (file:./dev.db). Produção (Vercel): não usada
+  // diretamente — src/lib/db.ts troca para o adaptador libSQL/Turso quando
+  // TURSO_DATABASE_URL está definida, já que Vercel não tem disco persistente.
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id           String   @id @default(cuid())
+  nome         String
+  email        String   @unique
+  senhaHash    String
+  admin        Boolean  @default(false) // só admins podem publicar monstros/itens no compêndio oficial
+  criadoEm     DateTime @default(now())
+
+  personagens        Personagem[]
+  campanhasComoOraculo Campanha[]        @relation("OraculoDaCampanha")
+  participacoes      CampanhaJogador[]
+  monstros           Monstro[]
+  itensCompendio     ItemCompendio[]
+  poderesCompendio   PoderCompendio[]
+
+  amizadesEnviadas  Amizade[] @relation("SolicitanteDaAmizade")
+  amizadesRecebidas Amizade[] @relation("DestinatarioDaAmizade")
+  chavesApi         ChaveApi[]
+}
+
+// Chave de API pessoal — usada por integrações externas (ex.: um MCP) para agir
+// em nome do usuário dono da chave via a API pública em /api/mcp/*.
+model ChaveApi {
+  id           String    @id @default(cuid())
+  usuarioId    String
+  usuario      Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  nome         String
+  chaveHash    String    @unique
+  prefixo      String // primeiros caracteres da chave, só para exibição/identificação
+  criadoEm     DateTime  @default(now())
+  ultimoUsoEm  DateTime?
+}
+
+model Amizade {
+  id             String   @id @default(cuid())
+  solicitanteId  String
+  solicitante    Usuario  @relation("SolicitanteDaAmizade", fields: [solicitanteId], references: [id], onDelete: Cascade)
+  destinatarioId String
+  destinatario   Usuario  @relation("DestinatarioDaAmizade", fields: [destinatarioId], references: [id], onDelete: Cascade)
+  status         String   @default("pendente") // pendente | aceita | recusada
+  criadoEm       DateTime @default(now())
+
+  @@unique([solicitanteId, destinatarioId])
+}
+
+model Personagem {
+  id        String   @id @default(cuid())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  nome           String
+  historia       String   @default("")
+  ilustracaoUrl  String?
+  // Arte de corpo inteiro — usada em destaque na ficha, no hero público e no Estúdio de Stream.
+  ilustracaoCompletaUrl String?
+  parenteDivino  String
+  armamento      String // Lutador | Espadachim | Atirador
+
+  forca         Int @default(1)
+  destreza      Int @default(1)
+  vigor         Int @default(1)
+  inteligencia  Int @default(1)
+  carisma       Int @default(1)
+  aparencia     Int @default(1)
+
+  vidaAtual      Int @default(10)
+  vidaMax        Int @default(10)
+  estaminaAtual  Int @default(10)
+  estaminaMax    Int @default(10)
+  aspis          Int @default(10)
+
+  nivel          Int @default(1)
+  deslocamento   Int @default(9)
+
+  especialidades String @default("[]") // JSON: EspecialidadeSelecionada[]
+  estilosCombate String @default("[]") // JSON: {nome, descricao}[]
+  poderes        String @default("[]") // JSON: PoderDef[]
+  itens          String @default("[]") // JSON: ItemPersonagem[]
+
+  // Quando true, jogadores da mesma campanha (fora o Oráculo) só veem nome e ilustração.
+  bloqueadoParaJogadores Boolean @default(false)
+  // Consentimento do jogador: permite que o Oráculo da campanha ajuste Vida/Estamina desta ficha.
+  permiteControleMestre  Boolean @default(false)
+
+  // Dracmas de Lua Nova — regra da casa de economia (ver README/documento de design).
+  dracmas Int @default(0)
+
+  criadoEm  DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  participacoes CampanhaJogador[]
+  transacoes    Transacao[]
+}
+
+model Transacao {
+  id           String     @id @default(cuid())
+  personagemId String
+  personagem   Personagem @relation(fields: [personagemId], references: [id], onDelete: Cascade)
+  campanhaId   String?
+
+  tipo     String // recompensa | venda | compra | ajusteManual
+  valor    Int // positivo = entrada, negativo = saída
+  motivo   String @default("")
+  autorId  String // quem lançou (Oráculo ou o próprio jogador)
+
+  criadoEm DateTime @default(now())
+}
+
+model Campanha {
+  id        String  @id @default(cuid())
+  oraculoId String
+  oraculo   Usuario @relation("OraculoDaCampanha", fields: [oraculoId], references: [id], onDelete: Cascade)
+
+  nome          String
+  sinopse       String @default("")
+  capaUrl       String?
+  visibilidade  String @default("privada") // publica | privada
+  vagasMaximas  Int    @default(5)
+  tom           String @default("") // tags separadas por vírgula
+  regrasDaCasa  String @default("{}") // JSON: { pontosAtributo, formulaEssencias, permiteEspecialidadeCustomizadaSemAprovacao }
+  oficial       Boolean @default(false) // curada por um admin (ex.: via MCP) — aparece como "Original"
+  origemMcp     Boolean @default(false) // criada via API pública/MCP, não pela UI
+  // Notas privadas do Oráculo desta campanha — nunca expostas em nenhuma rota de jogador.
+  notasPrivadas String @default("")
+  // Aba Semideuses do Escudo do Oráculo — some da visão dos jogadores no Hub quando ligado.
+  ocultarSemideusesParaJogadores Boolean @default(false)
+
+  criadoEm  DateTime @default(now())
+
+  jogadores       CampanhaJogador[]
+  missoes         Missao[]
+  sessao          SessaoAoVivo?
+  cena            CenaDeStream?
+  itensNoMercado  ItemDeCampanha[]
+  pistas          Pista[]
+  relatorios      Relatorio[]
+  encontros       EncontroCampanha[]
+}
+
+// Encontros pré-montados pelo Oráculo (Nível 2, botão "Criar Combate") — não é a sessão ao
+// vivo, é um monstro/ameaça preparado com antecedência a partir do Bestiário, pra puxar
+// depois pra dentro de uma sessão ativa (Escudo → aba Combates → "Adicionar").
+model EncontroCampanha {
+  id         String   @id @default(cuid())
+  campanhaId String
+  campanha   Campanha @relation(fields: [campanhaId], references: [id], onDelete: Cascade)
+  monstroId  String?
+  nome       String
+  vida       Int      @default(1)
+  criadoEm   DateTime @default(now())
+}
+
+// Aba Investigação — pistas que o Oráculo cria e revela aos jogadores aos poucos.
+model Pista {
+  id         String   @id @default(cuid())
+  campanhaId String
+  campanha   Campanha @relation(fields: [campanhaId], references: [id], onDelete: Cascade)
+  titulo     String
+  conteudo   String   @default("")
+  revelada   Boolean  @default(false)
+  criadoEm   DateTime @default(now())
+}
+
+// Aba Relatórios — resumo do que aconteceu em cada sessão, escrito pelo Oráculo ou jogadores.
+model Relatorio {
+  id         String   @id @default(cuid())
+  campanhaId String
+  campanha   Campanha @relation(fields: [campanhaId], references: [id], onDelete: Cascade)
+  titulo     String
+  conteudo   String   @default("")
+  autorId    String
+  autorNome  String
+  criadoEm   DateTime @default(now())
+}
+
+model CampanhaJogador {
+  id           String   @id @default(cuid())
+  campanhaId   String
+  campanha     Campanha @relation(fields: [campanhaId], references: [id], onDelete: Cascade)
+  usuarioId    String
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  personagemId String?
+  personagem   Personagem? @relation(fields: [personagemId], references: [id])
+  status       String   @default("pendente") // pendente | aprovado | recusado
+  criadoEm     DateTime @default(now())
+
+  @@unique([campanhaId, usuarioId])
+}
+
+model Missao {
+  id         String   @id @default(cuid())
+  campanhaId String
+  campanha   Campanha @relation(fields: [campanhaId], references: [id], onDelete: Cascade)
+  titulo     String
+  descricao  String   @default("")
+  status     String   @default("aberta") // aberta | concluida
+  criadoEm   DateTime @default(now())
+}
+
+model Monstro {
+  id        String   @id @default(cuid())
+  oraculoId String?
+  oraculo   Usuario? @relation(fields: [oraculoId], references: [id], onDelete: Cascade)
+  publico   Boolean  @default(false) // compartilhado pelo dono com a comunidade (autoatendido)
+  oficial   Boolean  @default(false) // curado por um admin — aparece como "Oficial" no bestiário
+
+  nome          String
+  ilustracaoUrl String?
+  vida          Int    @default(10)
+  aspis         Int    @default(10)
+
+  forca        Int    @default(2)
+  destreza     Int    @default(2)
+  vigor        Int    @default(2)
+  inteligencia Int    @default(2)
+  carisma      Int    @default(2)
+  aparencia    Int    @default(2)
+  atributoAtaque String @default("forca")
+
+  habilidadesAtivas   String @default("[]") // JSON: {nome, alcance, dadoDeDano}[]
+  habilidadesPassivas String @default("[]") // JSON: {nome, efeito}[]
+
+  criadoEm DateTime @default(now())
+}
+
+model ItemCompendio {
+  id        String   @id @default(cuid())
+  oraculoId String?
+  oraculo   Usuario? @relation(fields: [oraculoId], references: [id], onDelete: Cascade)
+  publico   Boolean  @default(false) // compartilhado pelo dono com a comunidade (autoatendido)
+  oficial   Boolean  @default(false) // curado por um admin — aparece como "Oficial" no compêndio
+
+  nome                  String
+  ilustracaoUrl         String?
+  tipo                  String @default("arma") // arma | consumivel | narrativo | legado
+  dadoDeDano            String?
+  multiplicadorCritico  Int    @default(2)
+  efeito                String @default("")
+  textoLore             String @default("")
+  // Preço base sugerido em Dracmas — 0 = não vendável por padrão. Cada campanha decide
+  // se este item aparece no PRÓPRIO Mercado (ItemDeCampanha) e pode sobrescrever o preço.
+  preco                 Int    @default(0)
+
+  criadoEm DateTime @default(now())
+
+  itensEmCampanhas ItemDeCampanha[]
+}
+
+// O Oráculo de CADA campanha decide, item por item do seu próprio Compêndio, o que fica
+// à venda ali — o Mercado nunca é uma vitrine global do site (ver README/documento de design).
+model ItemDeCampanha {
+  id                  String        @id @default(cuid())
+  campanhaId          String
+  campanha            Campanha      @relation(fields: [campanhaId], references: [id], onDelete: Cascade)
+  itemId              String
+  item                ItemCompendio @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  disponivelNoMercado Boolean       @default(true)
+  precoNestaCampanha  Int? // sobrescreve o preço base do item só nesta campanha, se preenchido
+
+  criadoEm DateTime @default(now())
+
+  @@unique([campanhaId, itemId])
+}
+
+model PoderCompendio {
+  id        String   @id @default(cuid())
+  oraculoId String?
+  oraculo   Usuario? @relation(fields: [oraculoId], references: [id], onDelete: Cascade)
+  publico   Boolean  @default(false) // compartilhado pelo dono com a comunidade (autoatendido)
+  oficial   Boolean  @default(false) // curado por um admin — aparece como "Oficial" no compêndio
+
+  nome          String
+  ilustracaoUrl String?
+  tipoAcao      String @default("Ação") // Ação | Reação | Livre
+  custoEstamina Int    @default(0)
+  duracao       String @default("Instantânea")
+  efeito        String @default("")
+
+  criadoEm DateTime @default(now())
+}
+
+model SessaoAoVivo {
+  id         String   @id @default(cuid())
+  campanhaId String   @unique
+  campanha   Campanha @relation(fields: [campanhaId], references: [id], onDelete: Cascade)
+
+  ordemIniciativa String  @default("[]") // JSON: {tipo:'personagem'|'monstro', id, nome, valor}[]
+  turnoAtual      Int     @default(0)
+  ativa           Boolean @default(true)
+  atualizadoEm    DateTime @updatedAt
+
+  eventos EventoSessao[]
+}
+
+model EventoSessao {
+  id        String       @id @default(cuid())
+  sessaoId  String
+  sessao    SessaoAoVivo @relation(fields: [sessaoId], references: [id], onDelete: Cascade)
+  tipo      String // rolagem | chat | narracao | sistema
+  autorNome String
+  conteudo  String
+  criadoEm  DateTime @default(now())
+}
+
+model CenaDeStream {
+  id             String   @id @default(cuid())
+  campanhaId     String   @unique
+  campanha       Campanha @relation(fields: [campanhaId], references: [id], onDelete: Cascade)
+  layout         String   @default("grid-2x2")
+  camerasConfig  String   @default("[]") // JSON: {jogadorId, nome, posicao, mostrarIlustracao}[]
+  fundoId        String   @default("acropole")
+  fundoCustomUrl String?
+  tituloCena     String   @default("")
+  overlayAtivo   Boolean  @default(true)
+  atualizadoEm   DateTime @updatedAt
+}

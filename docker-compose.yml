@@ -1,0 +1,14 @@
+services:
+  app:
+    build: .
+    image: filhos-do-destino:local
+    ports:
+      - "3001:3000"
+    environment:
+      SESSION_SECRET: ${SESSION_SECRET:-troque-esta-chave-em-producao-0123456789abcdef}
+    volumes:
+      - fd_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  fd_data:
