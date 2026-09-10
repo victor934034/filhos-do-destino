@@ -4,6 +4,32 @@ Servidor MCP que embrulha a [API pública do Filhos do Destino](../README.md#api
 (`/api/mcp/*`) em tools — permite pedir em linguagem natural, num cliente MCP (Claude
 Desktop, por exemplo), pra criar campanhas, monstros, itens e poderes na plataforma.
 
+## Prefira o endpoint remoto — sem instalar nada
+
+O mesmo conjunto de tools já roda hospedado no próprio site, em
+`https://filhos-do-destino.vercel.app/api/mcp-http` (protocolo MCP Streamable HTTP).
+Não precisa clonar este projeto nem rodar nada local:
+
+```bash
+claude mcp add --transport http filhos-do-destino https://filhos-do-destino.vercel.app/api/mcp-http \
+  --header "Authorization: Bearer <sua chave>"
+```
+
+No Claude Desktop (`claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "filhos-do-destino": {
+      "url": "https://filhos-do-destino.vercel.app/api/mcp-http",
+      "headers": { "Authorization": "Bearer fdd_sua_chave_aqui" }
+    }
+  }
+}
+```
+
+O resto deste README é só pra quem prefere rodar um processo local (`mcp-server/`) em
+vez de apontar pro endpoint remoto — funcionalmente idêntico, mesmas tools.
+
 ## O que isso NÃO é
 
 Isso não é a API em si — a API já existe e funciona sozinha, chamada direto por HTTP

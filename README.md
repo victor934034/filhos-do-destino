@@ -109,9 +109,17 @@ Além da UI, o sistema expõe uma API pública em `/api/mcp/*` para ferramentas 
 exemplo, um servidor MCP que crie campanhas com história pronta, monstros ou itens de forma
 programática.
 
-> Já existe um servidor MCP pronto embrulhando essa API — `mcp-server/` neste repositório.
-> Configure ele no Claude Desktop e converse em linguagem natural pra criar campanhas,
-> monstros, itens e poderes. Ver `mcp-server/README.md` pro passo a passo.
+> **Remoto (recomendado)** — o site expõe o protocolo MCP direto em
+> `https://filhos-do-destino.vercel.app/api/mcp-http`. Não precisa instalar nada local:
+> ```bash
+> claude mcp add --transport http filhos-do-destino https://filhos-do-destino.vercel.app/api/mcp-http \
+>   --header "Authorization: Bearer <sua chave>"
+> ```
+> Pra Claude Desktop, ver `mcp-server/README.md` (esse endpoint remoto funciona com
+> qualquer cliente MCP que fale Streamable HTTP).
+>
+> **Local (alternativa)** — `mcp-server/` neste repositório embrulha a mesma API rodando
+> via stdio, se preferir um processo local em vez de HTTP.
 
 **Autenticação:** gere uma chave em `/app/configuracoes` (menu "Configurações") e envie em todo
 request como `Authorization: Bearer <chave>`. A chave age em nome do usuário dono dela — se a

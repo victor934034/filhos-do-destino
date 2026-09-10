@@ -12,6 +12,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1128.0",
     "@libsql/client": "^0.18.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@prisma/adapter-libsql": "^6.19.3",
     "@prisma/client": "^6.2.0",
     "@vercel/blob": "^2.8.0",
