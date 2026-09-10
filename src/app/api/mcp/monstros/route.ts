@@ -30,6 +30,12 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const sessao = await autenticarChaveApi(req);
   if (!sessao) return NextResponse.json({ erro: "Chave de API inválida." }, { status: 401 });
+  // Criar por aqui sempre entra público no Bestiário (visível pra todo mundo) — só uma
+  // chave de conta admin pode fazer isso. Usuário comum cria pela própria interface
+  // (Homebrew), o que já fica privado, só na Homebrew dele.
+  if (!sessao.admin) {
+    return NextResponse.json({ erro: "Só uma chave de conta admin pode criar monstros por aqui." }, { status: 403 });
+  }
 
   const ficha = (await req.json().catch(() => null)) as FichaMonstro | null;
   if (!ficha?.nome?.trim()) {
