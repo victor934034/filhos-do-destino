@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { obterSessao, souAdmin } from "@/lib/auth";
+import { obterSessao } from "@/lib/auth";
 import { paraItemCompendio } from "@/lib/itemCompendioDb";
 import { EditorItem } from "@/components/compendio/EditorItem";
 import { BotaoVoltar } from "@/components/ui/BotaoVoltar";
@@ -13,7 +13,7 @@ export default async function PaginaEditarItem({ params }: { params: Promise<{ i
   const it = await db.itemCompendio.findUnique({ where: { id } });
   if (!it || it.oraculoId !== sessao.usuarioId) notFound();
 
-  const admin = await souAdmin(sessao.usuarioId);
+  const admin = sessao.admin ?? false;
   return (
     <>
       <div className="px-5 pt-5">

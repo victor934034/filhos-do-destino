@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ erro: "Email ou senha incorretos." }, { status: 401 });
   }
 
-  await criarSessao({ usuarioId: usuario.id, nome: usuario.nome, email: usuario.email });
+  await criarSessao({ usuarioId: usuario.id, nome: usuario.nome, email: usuario.email, admin: usuario.admin });
 
   return NextResponse.json({ ok: true });
 }

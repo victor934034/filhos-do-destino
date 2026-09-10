@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     data: { nome, email, senhaHash },
   });
 
-  await criarSessao({ usuarioId: usuario.id, nome: usuario.nome, email: usuario.email });
+  await criarSessao({ usuarioId: usuario.id, nome: usuario.nome, email: usuario.email, admin: false });
 
   return NextResponse.json({ ok: true });
 }

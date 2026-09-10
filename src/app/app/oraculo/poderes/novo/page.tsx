@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
-import { obterSessao, souAdmin } from "@/lib/auth";
+import { obterSessao } from "@/lib/auth";
 import { EditorPoder } from "@/components/compendio/EditorPoder";
 import { BotaoVoltar } from "@/components/ui/BotaoVoltar";
 
 export default async function PaginaNovoPoder() {
   const sessao = await obterSessao();
   if (!sessao) redirect("/entrar");
-  const admin = await souAdmin(sessao.usuarioId);
+  const admin = sessao.admin ?? false;
 
   return (
     <>

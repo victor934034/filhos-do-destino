@@ -12,6 +12,13 @@ export interface SessaoPayload {
   usuarioId: string;
   nome: string;
   email: string;
+  // Presente desde que o banco passou a ser remoto (Turso/sqld) — consultar isso a cada
+  // navegação vinha custando uma ida à rede por clique. Fica embutido no JWT (assinado,
+  // não falsificável) só pra decisões de UI (mostrar/esconder menu, toggle "Original");
+  // ações administrativas de verdade nas rotas de API continuam checando o banco (ver
+  // souAdmin) — então revogar admin de alguém vale imediatamente pra essas, só a sessão
+  // já aberta leva até a próxima renovação (login/registro) pra refletir no menu.
+  admin?: boolean;
 }
 
 export async function criarSessao(payload: SessaoPayload) {

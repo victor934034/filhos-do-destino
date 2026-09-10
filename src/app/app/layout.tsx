@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
-import { obterSessao, souAdmin } from "@/lib/auth";
+import { obterSessao } from "@/lib/auth";
 import { BarraLateral } from "@/components/app/BarraLateral";
 
 export default async function LayoutApp({ children }: { children: React.ReactNode }) {
   const sessao = await obterSessao();
   if (!sessao) redirect("/entrar");
-  const ehAdmin = await souAdmin(sessao.usuarioId);
+  const ehAdmin = sessao.admin ?? false;
 
   return (
     <div className="flex h-screen flex-col overflow-hidden lg:flex-row">
