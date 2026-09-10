@@ -50,7 +50,10 @@ export async function POST(req: NextRequest) {
   }
 
   const dir = await diretorioDeUploads();
-  await writeFile(path.join(dir, nomeArquivo), bytes);
+  // Só é alcançado em dev/Docker (sem S3/Blob configurados) — o `turbopackIgnore` evita
+  // que o build rastreie o projeto inteiro por causa desse caminho de disco dinâmico,
+  // que na Vercel nunca roda de verdade (S3_ENDPOINT sempre vai estar definida lá).
+  await writeFile(path.join(/* turbopackIgnore: true */ dir, nomeArquivo), bytes);
 
   return NextResponse.json({ url: `/api/uploads/${nomeArquivo}` });
 }

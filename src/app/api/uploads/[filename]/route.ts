@@ -17,7 +17,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ fil
   }
   const dir = await diretorioDeUploads();
   try {
-    const bytes = await readFile(path.join(dir, filename));
+    // Só alcançado em dev/Docker — ver nota equivalente em ../route.ts.
+    const bytes = await readFile(path.join(/* turbopackIgnore: true */ dir, filename));
     const extensao = filename.split(".").pop()!;
     return new NextResponse(new Uint8Array(bytes), {
       headers: {
