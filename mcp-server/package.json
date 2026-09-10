@@ -1,0 +1,28 @@
+{
+  "name": "filhos-do-destino-mcp-server",
+  "version": "1.0.0",
+  "description": "Servidor MCP para o Filhos do Destino — cria campanhas, monstros, itens e poderes via a API pública /api/mcp.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "filhos-do-destino-mcp-server": "dist/index.js"
+  },
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.6.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
