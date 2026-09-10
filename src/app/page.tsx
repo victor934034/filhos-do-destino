@@ -68,8 +68,8 @@ export default function PaginaInicial() {
                 sizes="(max-width: 1024px) 400px, 560px"
               />
               {/* Névoa na base — dissolve o corte reto da ilustração em vez de terminar seco */}
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-noite via-noite/70 to-transparent blur-sm md:h-36" />
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-noite to-transparent" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-noite via-noite/80 to-transparent blur-md md:h-56" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-noite via-noite/60 to-transparent" />
             </EntradaSuave>
           </div>
         </section>
