@@ -8,12 +8,6 @@ const NAV = [
   { nome: "Ficha", href: "/#ficha" },
 ];
 
-const REDES = [
-  { nome: "Instagram", href: "https://instagram.com" },
-  { nome: "TikTok", href: "https://tiktok.com" },
-  { nome: "X", href: "https://x.com" },
-];
-
 export async function Cabecalho() {
   const sessao = await obterSessao();
 
@@ -33,20 +27,6 @@ export async function Cabecalho() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <div className="hidden items-center gap-2 sm:flex">
-            {REDES.map((r) => (
-              <a
-                key={r.nome}
-                href={r.href}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={r.nome}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-pergaminho/25 text-[10px] uppercase text-pergaminho/70 hover:border-ouro hover:text-ouro-claro"
-              >
-                {r.nome[0]}
-              </a>
-            ))}
-          </div>
           <Link
             href={sessao ? "/app" : "/cadastro"}
             className="rounded-full bg-ouro px-5 py-2 font-titulo text-xs font-bold uppercase tracking-[0.1em] text-tinta hover:bg-ouro-claro"
