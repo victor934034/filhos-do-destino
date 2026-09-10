@@ -22,12 +22,16 @@ export default async function PaginaHubCampanha({ params }: { params: Promise<{ 
 
   const acessoLiberado = ehOraculo || meuVinculoDb?.status === "aprovado";
 
-  const meusPersonagens = ehOraculo
-    ? []
-    : await db.personagem.findMany({
-        where: { usuarioId: sessao.usuarioId },
-        select: { id: true, nome: true },
-      });
+  // Nenhuma das duas depende da outra — paralelas em vez de sequenciais poupa uma ida e
+  // volta inteira ao banco remoto a cada carregamento desta página.
+  const [meusPersonagens, monstrosRaw] = await Promise.all([
+    ehOraculo
+      ? Promise.resolve([])
+      : db.personagem.findMany({ where: { usuarioId: sessao.usuarioId }, select: { id: true, nome: true } }),
+    acessoLiberado && ehOraculo
+      ? db.monstro.findMany({ where: { OR: [{ oraculoId: sessao.usuarioId }, { publico: true }] } })
+      : Promise.resolve([]),
+  ]);
 
   // Dados da Mesa (aba Combates) e do grid de Semideuses — só quem tem acesso liberado precisa.
   const personagensEmJogo = acessoLiberado
@@ -42,12 +46,7 @@ export default async function PaginaHubCampanha({ params }: { params: Promise<{ 
         })
     : [];
 
-  const monstrosDisponiveis =
-    acessoLiberado && ehOraculo
-      ? (await db.monstro.findMany({ where: { OR: [{ oraculoId: sessao.usuarioId }, { publico: true }] } })).map(
-          paraMonstro
-        )
-      : [];
+  const monstrosDisponiveis = monstrosRaw.map(paraMonstro);
 
   return (
     <>

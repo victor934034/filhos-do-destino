@@ -10,10 +10,15 @@ export default async function PaginaEstudioStream({ params }: { params: Promise<
   if (!sessao) redirect("/entrar");
 
   const { id } = await params;
-  const campanha = await db.campanha.findUnique({
-    where: { id },
-    include: { jogadores: { include: { usuario: true, personagem: true } } },
-  });
+  // Nenhuma das duas depende da outra — paralelas em vez de sequenciais poupa uma ida e
+  // volta inteira ao banco remoto a cada carregamento desta página.
+  const [campanha, cenaDb] = await Promise.all([
+    db.campanha.findUnique({
+      where: { id },
+      include: { jogadores: { include: { usuario: true, personagem: true } } },
+    }),
+    db.cenaDeStream.upsert({ where: { campanhaId: id }, update: {}, create: { campanhaId: id } }),
+  ]);
   if (!campanha) notFound();
 
   const ehOraculo = campanha.oraculoId === sessao.usuarioId;
@@ -32,12 +37,6 @@ export default async function PaginaEstudioStream({ params }: { params: Promise<
       estaminaAtual: j.personagem?.estaminaAtual ?? null,
       estaminaMax: j.personagem?.estaminaMax ?? null,
     }));
-
-  const cenaDb = await db.cenaDeStream.upsert({
-    where: { campanhaId: id },
-    update: {},
-    create: { campanhaId: id },
-  });
 
   const cenaInicial: CenaDeStream = {
     layout: cenaDb.layout as CenaDeStream["layout"],

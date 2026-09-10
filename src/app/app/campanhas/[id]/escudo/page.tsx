@@ -13,7 +13,12 @@ export default async function PaginaEscudoOraculo({ params }: { params: Promise<
   if (!sessao) redirect("/entrar");
 
   const { id } = await params;
-  const c = await db.campanha.findUnique({ where: { id }, include: INCLUDE_CAMPANHA_COMPLETA });
+  // As duas consultas não dependem uma da outra — paralelas em vez de sequenciais poupa
+  // uma ida e volta inteira ao banco remoto a cada carregamento desta página.
+  const [c, monstrosRaw] = await Promise.all([
+    db.campanha.findUnique({ where: { id }, include: INCLUDE_CAMPANHA_COMPLETA }),
+    db.monstro.findMany({ where: { OR: [{ oraculoId: sessao.usuarioId }, { publico: true }] } }),
+  ]);
   if (!c) notFound();
 
   const ehOraculo = c.oraculoId === sessao.usuarioId;
@@ -23,9 +28,7 @@ export default async function PaginaEscudoOraculo({ params }: { params: Promise<
     .filter((j) => j.status === "aprovado" && j.personagem)
     .map((j) => ({ ...paraFicha(j.personagem!), donoUsuarioId: j.usuarioId }));
 
-  const monstrosDisponiveis = (
-    await db.monstro.findMany({ where: { OR: [{ oraculoId: sessao.usuarioId }, { publico: true }] } })
-  ).map(paraMonstro);
+  const monstrosDisponiveis = monstrosRaw.map(paraMonstro);
 
   return (
     <>

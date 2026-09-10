@@ -20,24 +20,33 @@ export default async function PaginaMesaAoVivo({ params }: { params: Promise<{ i
   const acessoLiberado = ehOraculo || meuVinculo?.status === "aprovado";
   if (!acessoLiberado) notFound();
 
-  const personagensEmJogo = await Promise.all(
-    c.jogadores
-      .filter((j) => j.status === "aprovado" && j.personagemId)
-      .map(async (j) => {
-        const p = await db.personagem.findUnique({ where: { id: j.personagemId! } });
-        if (!p) return null;
-        const vejoTudo = ehOraculo || j.usuarioId === sessao.usuarioId || !p.bloqueadoParaJogadores;
-        return vejoTudo
-          ? { ...paraFicha(p), donoUsuarioId: j.usuarioId }
-          : { ...paraFichaLimitada(p), donoUsuarioId: j.usuarioId };
-      })
-  ).then((lista) => lista.filter((p): p is NonNullable<typeof p> => p !== null));
+  const jogadoresComPersonagem = c.jogadores.filter((j) => j.status === "aprovado" && j.personagemId);
 
-  const monstrosDisponiveis = ehOraculo
-    ? (await db.monstro.findMany({ where: { OR: [{ oraculoId: sessao.usuarioId }, { publico: true }] } })).map(
-        paraMonstro
-      )
-    : [];
+  // Antes buscava um personagem por vez (N idas e voltas ao banco, uma por jogador) — uma
+  // única findMany com "in" resolve todo mundo numa consulta só, e roda em paralelo com a
+  // busca de monstros (que não depende dela), já que o banco agora é remoto.
+  const [personagensRaw, monstrosRaw] = await Promise.all([
+    db.personagem.findMany({
+      where: { id: { in: jogadoresComPersonagem.map((j) => j.personagemId!) } },
+    }),
+    ehOraculo
+      ? db.monstro.findMany({ where: { OR: [{ oraculoId: sessao.usuarioId }, { publico: true }] } })
+      : Promise.resolve([]),
+  ]);
+
+  const personagensPorId = new Map(personagensRaw.map((p) => [p.id, p]));
+  const personagensEmJogo = jogadoresComPersonagem
+    .map((j) => {
+      const p = personagensPorId.get(j.personagemId!);
+      if (!p) return null;
+      const vejoTudo = ehOraculo || j.usuarioId === sessao.usuarioId || !p.bloqueadoParaJogadores;
+      return vejoTudo
+        ? { ...paraFicha(p), donoUsuarioId: j.usuarioId }
+        : { ...paraFichaLimitada(p), donoUsuarioId: j.usuarioId };
+    })
+    .filter((p): p is NonNullable<typeof p> => p !== null);
+
+  const monstrosDisponiveis = monstrosRaw.map(paraMonstro);
 
   return (
     <>
