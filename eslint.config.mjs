@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Projeto TypeScript separado, com seu próprio package.json/deps — não faz parte
+    // do build do site principal.
+    "mcp-server/**",
   ]),
 ]);
 
