@@ -74,7 +74,7 @@ export function BarraLateral({
     <>
       {/* Barra superior — só no mobile/tablet */}
       <div className="flex items-center justify-between border-b border-[var(--border-sutil)] bg-noite-alta px-4 py-3 lg:hidden">
-        <Link href="/app" className="flex items-center gap-2.5">
+        <Link href="/" className="flex items-center gap-2.5">
           <span className="flex h-7 w-7 items-center justify-center rounded-full border border-ouro">
             <span className="h-2 w-2 rotate-45 bg-ouro" />
           </span>
@@ -112,7 +112,7 @@ export function BarraLateral({
           menuAberto ? "translate-x-0" : ""
         }`}
       >
-        <Link href="/app" className="hidden items-center gap-3 border-b border-[var(--border-sutil)] px-5 py-5 lg:flex">
+        <Link href="/" className="hidden items-center gap-3 border-b border-[var(--border-sutil)] px-5 py-5 lg:flex">
           <span className="flex h-8 w-8 items-center justify-center rounded-full border border-ouro">
             <span className="h-2.5 w-2.5 rotate-45 bg-ouro" />
           </span>
